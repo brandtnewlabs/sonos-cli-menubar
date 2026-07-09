@@ -13,6 +13,12 @@ Features:
 - Playback (play/pause/next/prev), group volume, and mute.
 - Save, apply, and delete scenes.
 
+## Screenshots
+
+| Overview | Auto-group schedule |
+| --- | --- |
+| ![SonosBar — room, playback, and grouping](docs/screenshot-overview.png) | ![SonosBar — scenes and the daily auto-group schedule](docs/screenshot-schedule.png) |
+
 ## Requirements
 
 - macOS 13 or later.
