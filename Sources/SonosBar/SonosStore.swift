@@ -101,6 +101,15 @@ final class SonosStore: ObservableObject {
         await refreshStatus()
     }
 
+    /// Refreshes the state that can change out from under the open popover:
+    /// group topology *and* now-playing status. Grouping can change from the
+    /// scheduled job, "Test now", or the Sonos app itself, so the poll must
+    /// re-fetch groups — not just status.
+    func refreshLive() async {
+        await refreshGroups()
+        await refreshStatus()
+    }
+
     /// Now-playing + volume/mute for the selected room. Cheap enough to poll.
     func refreshStatus() async {
         guard binaryAvailable, !selectedRoom.isEmpty else { return }
@@ -118,6 +127,14 @@ final class SonosStore: ObservableObject {
         } catch {
             report(error)
         }
+    }
+
+    /// Grouping and scene changes take a moment to propagate across Sonos before
+    /// `group status` reflects them. Wait briefly, then refresh the live view so
+    /// the checkboxes update immediately rather than on the next poll.
+    private func settleAndRefresh() async {
+        try? await Task.sleep(nanoseconds: 1_200_000_000)
+        await refreshLive()
     }
 
     private func refreshScenes() async {
@@ -190,24 +207,24 @@ final class SonosStore: ObservableObject {
                 try await self.cli.run(["group", "unjoin", "--name", roomName])
             }
         }
-        await refreshGroups()
+        await settleAndRefresh()
     }
 
     func partyMode() async {
         await perform {
             try await self.cli.run(["group", "party", "--to", self.coordinatorName])
         }
-        await refreshGroups()
+        await settleAndRefresh()
     }
 
     func solo() async {
         await perform { try await self.cli.run(["group", "solo", "--name", self.selectedRoom]) }
-        await refreshGroups()
+        await settleAndRefresh()
     }
 
     func dissolve() async {
         await perform { try await self.cli.run(["group", "dissolve", "--name", self.selectedRoom]) }
-        await refreshGroups()
+        await settleAndRefresh()
     }
 
     // MARK: Scenes
@@ -215,8 +232,7 @@ final class SonosStore: ObservableObject {
     func applyScene(_ name: String) async {
         await perform { try await self.cli.run(["scene", "apply", name]) }
         // Applying a scene changes grouping and volumes.
-        await refreshGroups()
-        await refreshStatus()
+        await settleAndRefresh()
     }
 
     func saveScene(_ name: String) async {
@@ -278,8 +294,7 @@ final class SonosStore: ObservableObject {
             lastError = "Auto-group test: \(failure.description) — \(failure.error ?? "")"
         }
         endWork()
-        await refreshGroups()
-        await refreshStatus()
+        await settleAndRefresh()
     }
 
     private func persistAutoGroup() {
@@ -298,7 +313,7 @@ final class SonosStore: ObservableObject {
             while !Task.isCancelled {
                 try? await Task.sleep(nanoseconds: 5_000_000_000)
                 if Task.isCancelled { break }
-                await self?.refreshStatus()
+                await self?.refreshLive()
             }
         }
     }

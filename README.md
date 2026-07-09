@@ -119,8 +119,9 @@ Preferences (binary path, selected room, schedule config) are stored in
 - Speaker names are used as identifiers throughout (that's how `sonos` targets a
   device). A system with two identically named speakers is inherently ambiguous
   to the CLI; the room picker de-duplicates by name.
-- Polling for now-playing status happens only while the popover is open — each
-  call is a process spawn. Event streaming (`sonos watch`) is a future upgrade.
+- Polling for now-playing status and group topology happens only while the
+  popover is open — each call is a process spawn. Event streaming
+  (`sonos watch`) is a future upgrade.
 
 ## License
 
